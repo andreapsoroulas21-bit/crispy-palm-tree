@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gioco degli Investimenti</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1em;
+        }
+        
+        .game-area {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .left-panel, .right-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        h2 {
+            color: #764ba2;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+        
+        .scenario-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .scenario-btn {
+            padding: 15px 20px;
+            border: 3px solid #ddd;
+            background: white;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1em;
+            font-weight: 600;
+            text-align: left;
+        }
+        
+        .scenario-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        
+        .scenario-btn.active {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .scenario-info {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .returns-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .return-item {
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .return-positive {
+            color: #10b981;
+        }
+        
+        .return-negative {
+            color: #ef4444;
+        }
+        
+        .return-neutral {
+            color: #6b7280;
+        }
+        
+        .allocation-controls {
+            margin-top: 20px;
+        }
+        
+        .slider-group {
+            margin-bottom: 20px;
+        }
+        
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .slider {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+        
+        .slider-bonds {
+            background: linear-gradient(to right, #3b82f6 0%, #3b82f6 100%);
+        }
+        
+        .slider-stocks {
+            background: linear-gradient(to right, #10b981 0%, #10b981 100%);
+        }
+        
+        .slider-cash {
+            background: linear-gradient(to right, #f59e0b 0%, #f59e0b 100%);
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 20px 0;
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.2em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+        
+        .calculate-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            border-radius: 15px;
+            color: white;
+            text-align: center;
+        }
+        
+        .result-value {
+            font-size: 3em;
+            font-weight: 700;
+            margin: 20px 0;
+        }
+        
+        .history {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+        
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .history-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        .history-table td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .history-table tr:nth-child(even) {
+            background: #f0f0f0;
+        }
+        
+        @media (max-width: 768px) {
+            .game-area {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+        
+        const scenarios = {
+            inflazione: {
+                nome: "🔥 Inflazione e Crescita",
+                descrizione: "Economia in espansione con prezzi in aumento",
+                returns: {
+                    obbligazioni: -5,
+                    azioni: 10,
+                    cash: 1
+                }
+            },
+            deflazione: {
+                nome: "❄️ Deflazione e Rallentamento",
+                descrizione: "Economia in contrazione con prezzi in calo",
+                returns: {
+                    obbligazioni: 4,
+                    azioni: -15,
+                    cash: 0
+                }
+            },
+            stagflazione: {
+                nome: "⚠️ Stagflazione",
+                descrizione: "Stagnazione economica + inflazione",
+                returns: {
+                    obbligazioni: -10,
+                    azioni: -5,
+                    cash: -1
+                }
+            }
+        };
+        
+        function InvestmentGame() {
+            const [selectedScenario, setSelectedScenario] = useState(null);
+            const [bonds, setBonds] = useState(33);
+            const [stocks, setStocks] = useState(33);
+            const [cash, setCash] = useState(34);
+            const [result, setResult] = useState(null);
+            const [history, setHistory] = useState([]);
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+            
+            useEffect(() => {
+                if (chartRef.current) {
+                    const ctx = chartRef.current.getContext('2d');
+                    
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                    
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: ['Obbligazioni', 'Azioni', 'Cash'],
+                            datasets: [{
+                                data: [bonds, stocks, cash],
+                                backgroundColor: [
+                                    '#3b82f6',
+                                    '#10b981',
+                                    '#f59e0b'
+                                ],
+                                borderWidth: 3,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        },
+                                        padding: 15
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            return context.label + ': ' + context.parsed + '%';
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                return () => {
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+                };
+            }, [bonds, stocks, cash]);
+            
+            const handleBondsChange = (e) => {
+                const newBonds = parseInt(e.target.value);
+                const remaining = 100 - newBonds;
+                setBonds(newBonds);
+                
+                if (stocks + cash > remaining) {
+                    const ratio = stocks / (stocks + cash);
+                    setStocks(Math.floor(remaining * ratio));
+                    setCash(remaining - Math.floor(remaining * ratio));
+                }
+            };
+            
+            const handleStocksChange = (e) => {
+                const newStocks = parseInt(e.target.value);
+                const remaining = 100 - newStocks;
+                setStocks(newStocks);
+                
+                if (bonds + cash > remaining) {
+                    const ratio = bonds / (bonds + cash);
+                    setBonds(Math.floor(remaining * ratio));
+                    setCash(remaining - Math.floor(remaining * ratio));
+                }
+            };
+            
+            const handleCashChange = (e) => {
+                const newCash = parseInt(e.target.value);
+                const remaining = 100 - newCash;
+                setCash(newCash);
+                
+                if (bonds + stocks > remaining) {
+                    const ratio = bonds / (bonds + stocks);
+                    setBonds(Math.floor(remaining * ratio));
+                    setStocks(remaining - Math.floor(remaining * ratio));
+                }
+            };
+            
+            const calculateReturn = () => {
+                if (!selectedScenario) return;
+                
+                const returns = scenarios[selectedScenario].returns;
+                
+                const bondsReturn = (bonds / 100) * returns.obbligazioni;
+                const stocksReturn = (stocks / 100) * returns.azioni;
+                const cashReturn = (cash / 100) * returns.cash;
+                
+                const totalReturn = bondsReturn + stocksReturn + cashReturn;
+                
+                const newResult = {
+                    total: totalReturn.toFixed(2),
+                    bonds: bondsReturn.toFixed(2),
+                    stocks: stocksReturn.toFixed(2),
+                    cash: cashReturn.toFixed(2),
+                    scenario: scenarios[selectedScenario].nome,
+                    allocation: `${bonds}/${stocks}/${cash}`
+                };
+                
+                setResult(newResult);
+                setHistory([newResult, ...history.slice(0, 4)]);
+            };
+            
+            const totalAllocation = bonds + stocks + cash;
+            const isValidAllocation = totalAllocation === 100;
+            
+            const getReturnClass = (value) => {
+                if (value > 0) return 'return-positive';
+                if (value < 0) return 'return-negative';
+                return 'return-neutral';
+            };
+            
+            return (
+                <div className="container">
+                    <h1>🎯 Gioco degli Investimenti</h1>
+                    <p className="subtitle">Impara a gestire il tuo portafoglio in base agli scenari macroeconomici</p>
+                    
+                    <div className="game-area">
+                        <div className="left-panel">
+                            <h2>📊 Scegli lo Scenario</h2>
+                            <div className="scenario-buttons">
+                                {Object.keys(scenarios).map(key => (
+                                    <button
+                                        key={key}
+                                        className={`scenario-btn ${selectedScenario === key ? 'active' : ''}`}
+                                        onClick={() => setSelectedScenario(key)}
+                                    >
+                                        <div>{scenarios[key].nome}</div>
+                                        <div style={{fontSize: '0.85em', opacity: 0.8, marginTop: '5px'}}>
+                                            {scenarios[key].descrizione}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                            
+                            {selectedScenario && (
+                                <div className="scenario-info">
+                                    <strong>Rendimenti Attesi:</strong>
+                                    <div className="returns-grid">
+                                        <div className="return-item">
+                                            <div>Obbligazioni</div>
+                                            <div className={getReturnClass(scenarios[selectedScenario].returns.obbligazioni)}>
+                                                {scenarios[selectedScenario].returns.obbligazioni > 0 ? '+' : ''}
+                                                {scenarios[selectedScenario].returns.obbligazioni}%
+                                            </div>
+                                        </div>
+                                        <div className="return-item">
+                                            <div>Azioni</div>
+                                            <div className={getReturnClass(scenarios[selectedScenario].returns.azioni)}>
+                                                {scenarios[selectedScenario].returns.azioni > 0 ? '+' : ''}
+                                                {scenarios[selectedScenario].returns.azioni}%
+                                            </div>
+                                        </div>
+                                        <div className="return-item">
+                                            <div>Cash</div>
+                                            <div className={getReturnClass(scenarios[selectedScenario].returns.cash)}>
+                                                {scenarios[selectedScenario].returns.cash > 0 ? '+' : ''}
+                                                {scenarios[selectedScenario].returns.cash}%
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        
+                        <div className="right-panel">
+                            <h2>💼 Componi il Portafoglio</h2>
+                            <div className="chart-container">
+                                <canvas ref={chartRef}></canvas>
+                            </div>
+                            
+                            <div className="allocation-controls">
+                                <div className="slider-group">
+                                    <div className="slider-label">
+                                        <span>🔵 Obbligazioni</span>
+                                        <span>{bonds}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={bonds}
+                                        onChange={handleBondsChange}
+                                        className="slider slider-bonds"
+                                    />
+                                </div>
+                                
+                                <div className="slider-group">
+                                    <div className="slider-label">
+                                        <span>🟢 Azioni</span>
+                                        <span>{stocks}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={stocks}
+                                        onChange={handleStocksChange}
+                                        className="slider slider-stocks"
+                                    />
+                                </div>
+                                
+                                <div className="slider-group">
+                                    <div className="slider-label">
+                                        <span>🟡 Cash</span>
+                                        <span>{cash}%</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="100"
+                                        value={cash}
+                                        onChange={handleCashChange}
+                                        className="slider slider-cash"
+                                    />
+                                </div>
+                                
+                                <button
+                                    className="calculate-btn"
+                                    onClick={calculateReturn}
+                                    disabled={!selectedScenario || !isValidAllocation}
+                                >
+                                    Calcola Rendimento
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {result && (
+                        <div className="results">
+                            <h2 style={{color: 'white', marginBottom: '10px'}}>📈 Rendimento Portafoglio</h2>
+                            <div className="result-value">
+                                {result.total > 0 ? '+' : ''}{result.total}%
+                            </div>
+                        </div>
+                    )}
+                    
+                    {history.length > 0 && (
+                        <div className="history">
+                            <h2>📜 Storico Simulazioni</h2>
+                            <table className="history-table">
+                                <thead>
+                                    <tr>
+                                        <th>Scenario</th>
+                                        <th>Allocazione (B/A/C)</th>
+                                        <th>Rendimento</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {history.map((item, index) => (
+                                        <tr key={index}>
+                                            <td>{item.scenario}</td>
+                                            <td>{item.allocation}</td>
+                                            <td style={{
+                                                color: item.total > 0 ? '#10b981' : '#ef4444',
+                                                fontWeight: 'bold'
+                                            }}>
+                                                {item.total > 0 ? '+' : ''}{item.total}%
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        
+        ReactDOM.render(<InvestmentGame />, document.getElementById('root'));
+    </script>
+</body>
+</html>
